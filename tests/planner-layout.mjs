@@ -10,7 +10,11 @@ const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless
 try{
  for(const [width,height,oldWidth] of [[1440,900,660],[1920,1080,864],[2560,1440,1151],[768,1024,0],[390,844,352],[320,640,0],[844,390,0]]){
   const context=await browser.newContext({viewport:{width,height},isMobile:width<650,hasTouch:width<650});await context.addInitScript(s=>localStorage.setItem('gather:last',JSON.stringify(s)),session);
-  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3108');await page.getByRole('button',{name:'Fit entire floor plan'}).waitFor();
+  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3108');await page.getByRole('button',{name:'Fill available width'}).waitFor();
+  await expect.poll(async()=>{const plan=await page.locator('.floor-svg').boundingBox(),board=await page.locator('.board-scroll').boundingBox();return plan.y+plan.height<=board.y+board.height+1&&plan.x>=board.x&&plan.x+plan.width<=board.x+board.width+1;}).toBe(true);
+  const defaultPlan=await page.locator('.floor-svg').boundingBox();
+  console.log(`Default auto-fit at ${width}x${height}: ${Math.round(defaultPlan.width)}x${Math.round(defaultPlan.height)}, entire room visible.`);
+  await page.getByRole('button',{name:'Fill available width'}).click();
   await expect.poll(async()=>Math.abs((await page.locator('.floor-svg').boundingBox()).width-(await page.locator('.board-scroll').boundingBox()).width)).toBeLessThan(20);
   const plan=await page.locator('.floor-svg').boundingBox(),board=await page.locator('.board-scroll').boundingBox(),workspace=await page.locator('.workspace').boundingBox();
   assert.ok(workspace.y+workspace.height<=height+1,`Workspace exceeds viewport at ${width}`);
@@ -29,7 +33,7 @@ try{
  }
  // Filling the panel requires scrolling on desktop; dragging a chair near an edge scrolls automatically.
  const context=await browser.newContext({viewport:{width:1440,height:900}});await context.addInitScript(s=>localStorage.setItem('gather:last',JSON.stringify(s)),session);
- const page=await context.newPage();await page.goto('http://127.0.0.1:3108');const chair=page.locator(`.floor-svg .chair[data-table-id="${head.id}"][data-seat-index="26"]`);await chair.scrollIntoViewIfNeeded();
+ const page=await context.newPage();await page.goto('http://127.0.0.1:3108');await page.getByRole('button',{name:'Fill available width'}).click();const chair=page.locator(`.floor-svg .chair[data-table-id="${head.id}"][data-seat-index="26"]`);await chair.scrollIntoViewIfNeeded();
  const bounds=await chair.boundingBox(),board=await page.locator('.board-scroll').boundingBox();assert.ok(await page.locator('.board-scroll').evaluate(e=>e.scrollTop)>0);
  await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2+8,bounds.y+bounds.height/2);
  await page.mouse.move(board.x+board.width/2,board.y+4,{steps:10});await expect.poll(()=>page.locator('.board-scroll').evaluate(e=>e.scrollTop),{timeout:10000}).toBe(0);

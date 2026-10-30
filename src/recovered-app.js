@@ -14846,7 +14846,7 @@ function og({
   onMoveTable: rt,
   zoom: mt,
   floorPlan,
-  sizing = "width",
+  sizing = "fit",
 }) {
   const [V, gt] = J.useState(null),
     [X, N] = J.useState(null),
@@ -15527,10 +15527,9 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
       () => x.removeEventListener("change", A)
     );
   }, []);
-  const [section, setSection] = J.useState(0);
-  const $ = Q ? Math.min(Z, Math.max(3, Math.floor((mt - 24) / 82))) : Z,
-    m = Math.ceil(Z / $),
-    page = Math.min(section, m - 1),
+  const compactHead = Q && (mt - 24) / Z < 44;
+  const compactFont = Math.max(4, Math.min(10, ((mt - 16 - (Z - 1) * 2) / Z - 4) / 1.75));
+  const $ = Z,
     y = Array.from({ length: S.capacity }, (x, A) => {
       const H = R.find((nt) => nt.tableId === S.id && nt.seatIndex === A),
         ot = (A / S.capacity) * Math.PI * 2 - Math.PI / 2,
@@ -15543,7 +15542,6 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
               left: `${50 + 36 * Math.cos(ot)}%`,
               top: `${50 + 39 * Math.sin(ot)}%`,
             };
-      if (Q && Math.floor((A % Z) / $) !== page) return null;
       return c.jsxs(
         "button",
         {
@@ -15588,9 +15586,13 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
           children: [
             c.jsxs("span", {
               className: "detail-chair-number",
-              children: ["Chair ", A + 1],
+              children: [compactHead ? "" : "Chair ", A + 1],
             }),
-            c.jsx("strong", { children: H?.name || "Open seat" }),
+            c.jsx("strong", {
+              title: H?.name || "Open seat",
+              style: compactHead ? {fontSize: compactFont} : undefined,
+              children: H ? compactHead ? guestInitials(H.name) : H.name : compactHead ? "—" : "Open seat",
+            }),
           ],
         },
         A,
@@ -15603,26 +15605,7 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
       c.jsx("p", {
         className: "table-seating-hint",
         children:
-          "Click a guest for details. Drag onto a chair to move or swap seats; on touch screens, hold first.",
-      }),
-      Q && m > 1 && c.jsxs("div", {
-        className: "head-section-controls",
-        children: [
-          c.jsx("button", { className: "button secondary", "aria-label": "Previous chairs", disabled: page === 0,
-            onClick: () => setSection(Math.max(0, page - 1)),
-            onDragOver: e => e.preventDefault(),
-            onDragEnter: e => {if(gt && !e.currentTarget.contains(e.relatedTarget)) setSection(Math.max(0, page - 1));},
-            children: "← Previous" }),
-          c.jsxs("div", { children: [
-            c.jsx("strong", { children: `Section ${page + 1} of ${m}` }),
-            c.jsx("small", { children: `Chairs ${page * $ + 1}–${Math.min((page + 1) * $, Z)} · ${Z + page * $ + 1}–${Math.min(Z + (page + 1) * $, S.capacity)}` }),
-          ] }),
-          c.jsx("button", { className: "button secondary", "aria-label": "Next chairs", disabled: page === m - 1,
-            onClick: () => setSection(Math.min(m - 1, page + 1)),
-            onDragOver: e => e.preventDefault(),
-            onDragEnter: e => {if(gt && !e.currentTarget.contains(e.relatedTarget)) setSection(Math.min(m - 1, page + 1));},
-            children: "Next →" }),
-        ],
+          compactHead ? "The whole table is shown with initials. Tap a guest for full details; hold and drag to move a seat." : "Click a guest for details. Drag onto a chair to move or swap seats; on touch screens, hold first.",
       }),
       c.jsx("div", {
         ref: rt,
@@ -15643,7 +15626,7 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
             (x.preventDefault(), x.stopPropagation());
         },
         children: c.jsxs("div", {
-          className: `table-seating-diagram ${Q ? "head-seating" : "round-seating"}`,
+          className: `table-seating-diagram ${Q ? `head-seating${compactHead ? " head-seating-compact" : ""}` : "round-seating"}`,
           style: Q ? { "--seat-columns": $ } : void 0,
           children: [
             Array.from({ length: 1 }, (x, A) =>
@@ -17362,7 +17345,7 @@ const { GuestTablePicker, VenueLayer, FloorPlanEditor } = createFeatures(J, Al);
 
 function Eg() {
   const [pickerOpen, setPickerOpen] = J.useState(false);
-  const [planSizing, setPlanSizing] = J.useState("width");
+  const [planSizing, setPlanSizing] = J.useState("fit");
   const [S, R] = J.useState(null),
     [z, o] = J.useState(null),
     [Q, Z] = J.useState(""),

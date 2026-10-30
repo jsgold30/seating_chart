@@ -20,14 +20,17 @@ try{
   assert.ok(box.x>=0&&box.x+box.width<=width);
   assert.equal(await dialog.locator('details[open]').count(),0);
   const diagram=dialog.locator('.table-seating-scroll');assert.equal(await diagram.evaluate(e=>e.scrollWidth>e.clientWidth+1),false);
-  const seen=new Set();let pages=0;
-  while(true){
-   for(const index of await dialog.locator('[data-detail-seat]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.detailSeat))))seen.add(index);
-   pages++;const next=dialog.getByRole('button',{name:'Next chairs',exact:true});if(await next.isDisabled())break;
-   const label=await dialog.locator('.head-section-controls strong').textContent();await next.click();await expect(dialog.locator('.head-section-controls strong')).not.toHaveText(label);
-  }
-  assert.deepEqual([...seen].sort((a,b)=>a-b),Array.from({length:30},(_,i)=>i));
-  while(!await dialog.getByRole('button',{name:'Previous chairs',exact:true}).isDisabled())await dialog.getByRole('button',{name:'Previous chairs',exact:true}).click();
+  assert.equal(await dialog.getByRole('button',{name:'Next chairs',exact:true}).count(),0);
+  assert.equal(await dialog.getByRole('button',{name:'Previous chairs',exact:true}).count(),0);
+  await expect(dialog.locator('[data-detail-seat]')).toHaveCount(30);
+  const seen=await dialog.locator('[data-detail-seat]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.detailSeat)));
+  assert.deepEqual(seen.sort((a,b)=>a-b),Array.from({length:30},(_,i)=>i));
+  const visibleTogether=await diagram.evaluate(container=>{
+    const bounds=container.getBoundingClientRect();return [...container.querySelectorAll('[data-detail-seat]')].every(node=>{
+      const seat=node.getBoundingClientRect();return seat.x>=bounds.x&&seat.right<=bounds.right+1&&seat.y>=bounds.y&&seat.bottom<=bounds.bottom+1;
+    });
+  });
+  assert.ok(visibleTogether,'All chairs must fit together within the seating diagram');
   const guest=store.state(session.id).guests.find(g=>g.tableId===head.id&&g.seatIndex===0);
   await dialog.locator('[data-detail-seat="0"]').click();await page.getByRole('dialog',{name:guest.name,exact:true}).waitFor();
   await page.getByRole('button',{name:'Back to table',exact:false}).click();await dialog.waitFor();
@@ -42,7 +45,7 @@ try{
   await page.locator(`.floor-svg .table-target[data-table-id="${original.tables[0].id}"] .table-surface`).click();
   const round=page.getByRole('dialog',{name:'Table 01',exact:true});await round.waitFor();assert.equal(await round.locator('[data-detail-seat]').count(),10);
   assert.equal(await round.locator('.table-seating-scroll').evaluate(e=>e.scrollWidth>e.clientWidth+1),false);
-  console.log(`PASS ${width}x${height}: ${Math.round(box.width)}x${Math.round(box.height)} head-table dialog; all 30 chairs across ${pages} adaptive sections; guest details/settings intact; no seating changes.`);
+  console.log(`PASS ${width}x${height}: ${Math.round(box.width)}x${Math.round(box.height)} head-table dialog; all 30 chairs visible together without pagination; guest details/settings intact; no seating changes.`);
   await context.close();
  }
  const context=await browser.newContext({viewport:{width:1440,height:1000}});
@@ -51,13 +54,13 @@ try{
  await page.locator(`.floor-svg .table-target[data-table-id="${head.id}"] .table-surface`).click();
  const dialog=page.getByRole('dialog',{name:'Head table',exact:true});
  const moved=store.state(session.id).guests.find(g=>g.tableId===head.id&&g.seatIndex===0);
- await dialog.locator('[data-detail-seat="0"]').dragTo(dialog.locator('[data-detail-seat="20"]'));
- await expect.poll(()=>store.state(session.id).guests.find(g=>g.id===moved.id).seatIndex).toBe(20);
- await expect(dialog.locator('[data-detail-seat="20"] strong')).toHaveText(moved.name);
+ await dialog.locator('[data-detail-seat="0"]').dragTo(dialog.locator('[data-detail-seat="29"]'));
+ await expect.poll(()=>store.state(session.id).guests.find(g=>g.id===moved.id).seatIndex).toBe(29);
+ await expect(dialog.locator('[data-detail-seat="29"] strong')).toHaveText(moved.name);
  const swapped=store.state(session.id).guests.find(g=>g.tableId===head.id&&g.seatIndex===1);
- await dialog.locator('[data-detail-seat="20"]').dragTo(dialog.locator('[data-detail-seat="1"]'));
+ await dialog.locator('[data-detail-seat="29"]').dragTo(dialog.locator('[data-detail-seat="1"]'));
  await expect.poll(()=>store.state(session.id).guests.find(g=>g.id===moved.id).seatIndex).toBe(1);
- assert.equal(store.state(session.id).guests.find(g=>g.id===swapped.id).seatIndex,20);
+ assert.equal(store.state(session.id).guests.find(g=>g.id===swapped.id).seatIndex,29);
  assert.equal(store.state(session.id).guests.length,original.guests.length);
  await context.close();console.log('PASS: native chair drag and occupied-chair swap in compact table dialog.');
  assert.deepEqual(errors,[]);

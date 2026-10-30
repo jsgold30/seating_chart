@@ -18,7 +18,7 @@ async function drag(page,from,to){await expect.poll(()=>from.getAttribute('aria-
 try {
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
  await context.addInitScript(session=>localStorage.setItem('gather:last',JSON.stringify(session)),session);
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3102');await page.getByRole('button',{name:'Fit entire floor plan'}).click();await chair(page).waitFor();
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3102');await chair(page).waitFor();
  await expect(page.locator('.floor-svg .chair-initials')).toHaveCount(store.state(session.id).guests.filter(g=>g.tableId).length);
  const initial=page.locator(`.chair-initials[data-guest-id="${source.id}"]`);
  await expect(initial).toHaveText(source.name.split(/\s+/).map(word=>word[0]).join('').toUpperCase());
@@ -43,7 +43,7 @@ try {
  // Full table rejection must keep both the original assignment and every other guest intact.
  const target=original.tables[1],count=store.state(session.id).guests.filter(g=>g.tableId===target.id).length;
  store.updateTable(session.id,target.id,{name:target.name,capacity:count});
- await page.reload();await page.getByRole('button',{name:'Fit entire floor plan'}).click();await chair(page).waitFor();const before=JSON.stringify(store.state(session.id).guests);
+ await page.reload();await chair(page).waitFor();const before=JSON.stringify(store.state(session.id).guests);
  await drag(page,chair(page),table(page,target.id));await page.getByRole('alert').filter({hasText:'is full'}).waitFor();
  assert.equal(JSON.stringify(store.state(session.id).guests),before);
  // Escape cancels without an assignment request.
@@ -53,13 +53,13 @@ try {
  await context.close();
  // Phone touch: direct drag from an occupied head-table chair to a round-table center.
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await mobile.addInitScript(session=>localStorage.setItem('gather:last',JSON.stringify(session)),session);
- const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto('http://127.0.0.1:3102');await phone.getByRole('button',{name:'Fit entire floor plan'}).click();await chair(phone).waitFor();
+ const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto('http://127.0.0.1:3102');await chair(phone).waitFor();
  await expect(phone.locator(`.chair-initials[data-guest-id="${source.id}"]`)).toBeVisible();
  const start=await center(chair(phone)),end=await center(table(phone,original.tables[2].id));const cdp=await mobile.newCDPSession(phone);
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:start.x,y:start.y,id:1}]});
  for(let n=1;n<=12;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+(end.x-start.x)*n/12,y:start.y+(end.y-start.y)*n/12,id:1}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect.poll(()=>current().tableId).toBe(original.tables[2].id);
- await phone.reload();await phone.getByRole('button',{name:'Fit entire floor plan'}).click();await chair(phone).waitFor();assert.equal(current().tableId,original.tables[2].id);
+ await phone.reload();await chair(phone).waitFor();assert.equal(current().tableId,original.tables[2].id);
  await chair(phone).tap();await phone.getByRole('dialog',{name:source.name,exact:true}).waitFor();
  await mobile.close();
  const after=store.state(session.id);assert.deepEqual(after.guests.map(g=>g.id),guestIds);
