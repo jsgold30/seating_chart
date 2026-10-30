@@ -15497,20 +15497,23 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
       () => x.removeEventListener("change", A)
     );
   }, []);
-  const $ = Q && mt < 650 ? Math.min(Z, Math.max(3, Math.floor(mt / 65))) : Z,
+  const [section, setSection] = J.useState(0);
+  const $ = Q ? Math.min(Z, Math.max(3, Math.floor((mt - 24) / 82))) : Z,
     m = Math.ceil(Z / $),
+    page = Math.min(section, m - 1),
     y = Array.from({ length: S.capacity }, (x, A) => {
       const H = R.find((nt) => nt.tableId === S.id && nt.seatIndex === A),
         ot = (A / S.capacity) * Math.PI * 2 - Math.PI / 2,
         Ct = Q
           ? {
               gridColumn: ((A % Z) % $) + 1,
-              gridRow: Math.floor((A % Z) / $) * 3 + (A < Z ? 1 : 3),
+              gridRow: A < Z ? 1 : 3,
             }
           : {
               left: `${50 + 36 * Math.cos(ot)}%`,
               top: `${50 + 39 * Math.sin(ot)}%`,
             };
+      if (Q && Math.floor((A % Z) / $) !== page) return null;
       return c.jsxs(
         "button",
         {
@@ -15572,6 +15575,25 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
         children:
           "Click a guest for details. Drag onto a chair to move or swap seats; on touch screens, hold first.",
       }),
+      Q && m > 1 && c.jsxs("div", {
+        className: "head-section-controls",
+        children: [
+          c.jsx("button", { className: "button secondary", "aria-label": "Previous chairs", disabled: page === 0,
+            onClick: () => setSection(Math.max(0, page - 1)),
+            onDragOver: e => e.preventDefault(),
+            onDragEnter: e => {if(gt && !e.currentTarget.contains(e.relatedTarget)) setSection(Math.max(0, page - 1));},
+            children: "← Previous" }),
+          c.jsxs("div", { children: [
+            c.jsx("strong", { children: `Section ${page + 1} of ${m}` }),
+            c.jsx("small", { children: `Chairs ${page * $ + 1}–${Math.min((page + 1) * $, Z)} · ${Z + page * $ + 1}–${Math.min(Z + (page + 1) * $, S.capacity)}` }),
+          ] }),
+          c.jsx("button", { className: "button secondary", "aria-label": "Next chairs", disabled: page === m - 1,
+            onClick: () => setSection(Math.min(m - 1, page + 1)),
+            onDragOver: e => e.preventDefault(),
+            onDragEnter: e => {if(gt && !e.currentTarget.contains(e.relatedTarget)) setSection(Math.min(m - 1, page + 1));},
+            children: "Next →" }),
+        ],
+      }),
       c.jsx("div", {
         ref: rt,
         className: "table-seating-scroll",
@@ -15594,7 +15616,7 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
           className: `table-seating-diagram ${Q ? "head-seating" : "round-seating"}`,
           style: Q ? { "--seat-columns": $ } : void 0,
           children: [
-            Array.from({ length: Q ? m : 1 }, (x, A) =>
+            Array.from({ length: 1 }, (x, A) =>
               c.jsxs(
                 "div",
                 {
@@ -15605,7 +15627,7 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
                     el(S) && c.jsx("span", { children: el(S) }),
                     c.jsxs("small", {
                       children: [
-                        m > 1 && Q ? `Section ${A + 1} of ${m} · ` : "",
+                        "",
                         R.filter((H) => H.tableId === S.id).length,
                         " / ",
                         S.capacity,
@@ -19081,6 +19103,70 @@ function Eg() {
           onClose: P,
           className: `table-detail-modal ${yt.number === 18 ? "head-table-modal" : ""}`,
           children: [
+            c.jsx("p", { className: "table-detail-count", children:
+              `${z.guests.filter(g => g.tableId === yt.id).length} of ${yt.capacity} seated · ${yt.capacity - z.guests.filter(g => g.tableId === yt.id).length} chairs available` }),
+            c.jsx(dg, {
+              key: yt.id,
+              table: yt,
+              guests: z.guests,
+              onGuest: jt,
+              onAssign: (g, tt) => {
+                it(g, yt.id, tt);
+              },
+            }),
+            c.jsxs("label", {
+              className: "field-label",
+              children: [
+                "Seat an unseated guest",
+                c.jsxs("select", {
+                  "aria-label": `Seat a guest at ${Qe(yt)}`,
+                  value: "",
+                  disabled:
+                    w ||
+                    z.guests.filter((g) => g.tableId === yt.id).length >=
+                      yt.capacity,
+                  onChange: (g) => {
+                    g.target.value && it(g.target.value, yt.id);
+                  },
+                  children: [
+                    c.jsx("option", { value: "", children: "Choose a guest…" }),
+                    _e.map((g) =>
+                      c.jsx("option", { value: g.id, children: g.name }, g.id),
+                    ),
+                  ],
+                }),
+              ],
+            }),            c.jsxs("details", { className: "table-details-disclosure", children: [
+              c.jsx("summary", { children: `Guest list · ${z.guests.filter(g => g.tableId === yt.id).length} seated` }),
+            c.jsxs("div", {
+              className: "table-guest-list",
+              children: [
+                z.guests
+                  .filter((g) => g.tableId === yt.id)
+                  .map((g) =>
+                    c.jsx(
+                      Xm,
+                      {
+                        guest: g,
+                        onSelect: () => jt(g),
+                        onUnseat: () => {
+                          it(g.id, null);
+                        },
+                        onDelete: () => at(g),
+                      },
+                      g.id,
+                    ),
+                  ),
+                !z.guests.some((g) => g.tableId === yt.id) &&
+                  c.jsx("p", {
+                    className: "table-empty",
+                    children: "No guests seated.",
+                  }),
+              ],
+            }),
+            ] }),
+            c.jsxs("details", { className: "table-details-disclosure", children: [
+              c.jsx("summary", { children: "Table settings" }),
             c.jsxs("div", {
               className: "chair-count-controls",
               children: [
@@ -19124,14 +19210,6 @@ function Eg() {
                 }),
               ],
             }),
-            c.jsx(dg, {
-              table: yt,
-              guests: z.guests,
-              onGuest: jt,
-              onAssign: (g, tt) => {
-                it(g, yt.id, tt);
-              },
-            }),
             c.jsxs(
               "form",
               {
@@ -19173,83 +19251,7 @@ function Eg() {
               },
               `name-${yt.id}-${yt.name}`,
             ),
-            c.jsxs("div", {
-              className: "table-modal-summary",
-              children: [
-                c.jsx("span", {
-                  className: "stat-icon sage",
-                  children: c.jsx(mc, { size: 24 }),
-                }),
-                c.jsxs("div", {
-                  children: [
-                    c.jsxs("strong", {
-                      children: [
-                        z.guests.filter((g) => g.tableId === yt.id).length,
-                        " of ",
-                        yt.capacity,
-                        " seated",
-                      ],
-                    }),
-                    c.jsxs("p", {
-                      children: [
-                        yt.capacity -
-                          z.guests.filter((g) => g.tableId === yt.id).length,
-                        " chairs available.",
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            c.jsxs("div", {
-              className: "table-guest-list",
-              children: [
-                z.guests
-                  .filter((g) => g.tableId === yt.id)
-                  .map((g) =>
-                    c.jsx(
-                      Xm,
-                      {
-                        guest: g,
-                        onSelect: () => jt(g),
-                        onUnseat: () => {
-                          it(g.id, null);
-                        },
-                        onDelete: () => at(g),
-                      },
-                      g.id,
-                    ),
-                  ),
-                !z.guests.some((g) => g.tableId === yt.id) &&
-                  c.jsx("p", {
-                    className: "table-empty",
-                    children: "No guests seated.",
-                  }),
-              ],
-            }),
-            c.jsxs("label", {
-              className: "field-label",
-              children: [
-                "Seat an unseated guest",
-                c.jsxs("select", {
-                  "aria-label": `Seat a guest at ${Qe(yt)}`,
-                  value: "",
-                  disabled:
-                    w ||
-                    z.guests.filter((g) => g.tableId === yt.id).length >=
-                      yt.capacity,
-                  onChange: (g) => {
-                    g.target.value && it(g.target.value, yt.id);
-                  },
-                  children: [
-                    c.jsx("option", { value: "", children: "Choose a guest…" }),
-                    _e.map((g) =>
-                      c.jsx("option", { value: g.id, children: g.name }, g.id),
-                    ),
-                  ],
-                }),
-              ],
-            }),
+            ] }),
           ],
         }),
     ],
