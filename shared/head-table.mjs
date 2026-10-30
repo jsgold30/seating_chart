@@ -1,4 +1,4 @@
-// Five joined table sections, with the wider center open on its upper side.
+// Chair groups around one connected dais, with the center open on its upper side.
 // Chair numbers remain the existing persistent seat indices.
 export function headTableGeometry(capacity) {
   const sections=[58,58,80,58,58].map((width,index)=>({index,width,x:0}));

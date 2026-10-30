@@ -1,4 +1,3 @@
-import { headTableGeometry } from '../shared/head-table.mjs';
 import { defaultFloorPlan } from '../shared/floor-plan.mjs';
 
 export function guestInitials(name) {
@@ -139,7 +138,7 @@ export function createFeatures(React, Modal) {
             <g className="editor-seating-reference" pointerEvents="none" aria-label="Existing table positions">
               {tables.map(t=>{
                 const count=guests.filter(g=>g.tableId===t.id).length;
-                return <g key={t.id}>{t.number===18?headTableGeometry(t.capacity).sections.map(section=><rect key={section.index} x={t.x+section.x} y={t.y-18} width={section.width} height="36" rx="1"/>):<circle cx={t.x} cy={t.y} r="29"/>}<text x={t.x} y={t.number===18?t.y+49:t.y-1} textAnchor="middle">{t.number===18?'Head table':t.number}</text><text x={t.x} y={t.number===18?t.y+61:t.y+11} textAnchor="middle" fontSize="7">{count}/{t.capacity}</text></g>;
+                return <g key={t.id}>{t.number===18?<rect x={t.x-160} y={t.y-18} width="320" height="36" rx="2"/>:<circle cx={t.x} cy={t.y} r="29"/>}<text x={t.x} y={t.number===18?t.y+49:t.y-1} textAnchor="middle">{t.number===18?'Head table':t.number}</text><text x={t.x} y={t.number===18?t.y+61:t.y+11} textAnchor="middle" fontSize="7">{count}/{t.capacity}</text></g>;
               })}
             </g>
           </svg>

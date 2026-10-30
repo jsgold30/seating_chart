@@ -15290,11 +15290,10 @@ function og({
                           headTableGeometry(d.capacity).chairs.map(chair => B(d, chair.index, {
                             x:chair.x,y:chair.y,width:chair.width,height:chair.height,
                           })),
-                          headTableGeometry(d.capacity).sections.map(section => c.jsx("rect", {
-                            x:section.x,y:-18,width:section.width,height:36,rx:1,
-                            "data-head-section":section.index,
-                            className:`head-section-surface ${section.index===2?"table-surface":""} ${G?"full":""}`,
-                          },section.index)),
+                          c.jsx("rect", {
+                            x:-160,y:-18,width:320,height:36,rx:2,
+                            className:`table-surface ${G?"full":""}`,
+                          }),
                           c.jsxs("text", {
                             textAnchor: "middle",
                             y: 49,
@@ -15612,14 +15611,16 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
         children: c.jsxs("div", {
           className: `table-seating-diagram ${Q ? `head-seating${compactHead ? " head-seating-compact" : ""}` : "round-seating"}`,
           style: Q ? { "--seat-columns": $ } : void 0,
-          children: Q ? headGeometry.sections.map(section => c.jsxs("div", {
-            className:"head-detail-section",style:{flex:section.width},"data-head-section":section.index,
+          children: Q ? [c.jsx("div", {
+            className:"detail-table head-detail-connected",
+            children:c.jsx("span",{children:el(S)||"Head table"}),
+          }), ...headGeometry.sections.map(section => c.jsxs("div", {
+            className:"head-detail-section",style:{"--section-column":section.index+1},"data-head-section":section.index,
             children:[
               c.jsx("div",{className:"head-detail-row",style:{"--row-seats":Math.max(1,headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='top').length)},children:headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='top').map(chair=>y[chair.index])}),
-              c.jsx("div",{className:"detail-table head-detail-surface",children:section.index===2?c.jsx("span",{children:el(S)||"Head table"}):null}),
               c.jsx("div",{className:"head-detail-row",style:{"--row-seats":Math.max(1,headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='bottom').length)},children:headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='bottom').map(chair=>y[chair.index])}),
             ],
-          },section.index)) : [
+          },section.index))] : [
             c.jsxs("div",{className:"detail-table",children:[
               c.jsx("strong",{children:_a(S)}),el(S)&&c.jsx("span",{children:el(S)}),
               c.jsx("small",{children:`${R.filter(guest=>guest.tableId===S.id).length} / ${S.capacity} seated`}),
