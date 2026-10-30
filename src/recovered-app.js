@@ -1,4 +1,4 @@
-import { createFeatures } from './features.jsx';
+import { createFeatures, guestInitials } from './features.jsx';
 (function () {
   const R = document.createElement("link").relList;
   if (R && R.supports && R.supports("modulepreload")) return;
@@ -15043,7 +15043,7 @@ function og({
       (N(null), G ? Z(G) : z ? Q(z, d.id, C) : o(d));
     }
     const r = w?.target?.tableId === d.id && w.target.index === C;
-    return c.jsx(
+    const seat = c.jsx(
       "rect",
       {
         ...k,
@@ -15102,6 +15102,21 @@ function og({
       },
       C,
     );
+    const angle = Number.parseFloat(k.transform?.slice(7) || "0") * Math.PI / 180;
+    const centerX = Number(k.x) + Number(k.width) / 2;
+    const centerY = Number(k.y) + Number(k.height) / 2;
+    return c.jsxs(c.Fragment, {
+      children: [seat, G && c.jsx("text", {
+        className: `chair-initials${w?.guestId === G.id ? " chair-initials-dragging" : ""}`,
+        "data-guest-id": G.id,
+        "aria-hidden": true,
+        x: centerX * Math.cos(angle) - centerY * Math.sin(angle),
+        y: centerX * Math.sin(angle) + centerY * Math.cos(angle),
+        textAnchor: "middle", dominantBaseline: "central",
+        style: { fontSize: d.number === 18 ? 6.2 : 5.5 },
+        children: guestInitials(G.name),
+      })],
+    }, C);
   }
   return c.jsxs("div", {
     className: `plan-canvas${w ? " seat-drag-active" : ""}`,

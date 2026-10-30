@@ -1,5 +1,12 @@
 import { defaultFloorPlan } from '../shared/floor-plan.mjs';
 
+export function guestInitials(name) {
+  const words=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(words.length>2&&/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(words.at(-1)))words.pop();
+  const first=word=>Array.from(word?.replace(/^[^\p{L}\p{N}]+/u,'')||'')[0]||'';
+  return (first(words[0])+(words.length>1?first(words.at(-1)):'')).toLocaleUpperCase();
+}
+
 export function createFeatures(React, Modal) {
   const {useState, useRef} = React;
   const title = table => `${table.number === 18 ? 'Head table' : `Table ${String(table.number).padStart(2,'0')}`}${table.name && !/^Table \d+$/.test(table.name) && table.name !== 'Head table' ? ` · ${table.name}` : ''}`;

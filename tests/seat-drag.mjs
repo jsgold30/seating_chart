@@ -19,6 +19,14 @@ try {
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
  await context.addInitScript(session=>localStorage.setItem('gather:last',JSON.stringify(session)),session);
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3102');await chair(page).waitFor();
+ await expect(page.locator('.floor-svg .chair-initials')).toHaveCount(store.state(session.id).guests.filter(g=>g.tableId).length);
+ const initial=page.locator(`.chair-initials[data-guest-id="${source.id}"]`);
+ await expect(initial).toHaveText(source.name.split(/\s+/).map(word=>word[0]).join('').toUpperCase());
+ assert.equal(await initial.getAttribute('transform'),null);
+ assert.equal(await initial.evaluate(node=>getComputedStyle(node).pointerEvents),'none');
+ await chair(page).hover();await expect(page.getByRole('tooltip')).toContainText(source.name);
+ await page.locator('.floor-svg').screenshot({path:'/workspace/work/qa/initials-floor-plan.png'});
+
  // An ordinary mouse drag (no long hold) from head-table chair 27 to every round table.
  for(const destination of original.tables.filter(t=>t.number!==18)){
   await drag(page,chair(page),table(page,destination.id));
@@ -46,11 +54,13 @@ try {
  // Phone touch: direct drag from an occupied head-table chair to a round-table center.
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await mobile.addInitScript(session=>localStorage.setItem('gather:last',JSON.stringify(session)),session);
  const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto('http://127.0.0.1:3102');await chair(phone).waitFor();
+ await expect(phone.locator(`.chair-initials[data-guest-id="${source.id}"]`)).toBeVisible();
  const start=await center(chair(phone)),end=await center(table(phone,original.tables[2].id));const cdp=await mobile.newCDPSession(phone);
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:start.x,y:start.y,id:1}]});
  for(let n=1;n<=12;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+(end.x-start.x)*n/12,y:start.y+(end.y-start.y)*n/12,id:1}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect.poll(()=>current().tableId).toBe(original.tables[2].id);
  await phone.reload();await chair(phone).waitFor();assert.equal(current().tableId,original.tables[2].id);
+ await chair(phone).tap();await phone.getByRole('dialog',{name:source.name,exact:true}).waitFor();
  await mobile.close();
  const after=store.state(session.id);assert.deepEqual(after.guests.map(g=>g.id),guestIds);
  const tablesExpected=JSON.parse(tablesBefore).map(t=>t.id===target.id?{...t,capacity:count}:t);
