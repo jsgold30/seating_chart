@@ -15209,13 +15209,6 @@ function og({
               }),
             ],
           }),
-          c.jsx("text", {
-            x: "22",
-            y: "16",
-            className: "plan-label",
-            fontSize: "8",
-            children: "RECEPTION FLOOR",
-          }),
           c.jsxs("g", {
             fill: "#fffdfa",
             stroke: "#c9c9bd",
@@ -17923,22 +17916,6 @@ function Eg() {
                   }),
                 ],
               }),
-              c.jsx("button", {
-                className: "icon-button help-button",
-                onClick: () => st("help"),
-                "aria-label": "Help",
-                children: c.jsx(lg, { size: 19 }),
-              }),
-              c.jsx("span", { className: "header-divider" }),
-              c.jsx("span", {
-                className: "profile-avatar",
-                title: z.role === "owner" ? "Plan owner" : "Family editor",
-                children: z.role === "owner" ? "Y" : "F",
-              }),
-              c.jsx("span", {
-                className: "profile-label",
-                children: z.role === "owner" ? "Your wedding" : "Family editor",
-              }),
             ],
           }),
         ],
@@ -18039,33 +18016,6 @@ function Eg() {
                       c.jsx("span", { children: "Tables" }),
                     ],
                   }),
-                ],
-              }),
-              c.jsxs("div", {
-                className: "save-status",
-                title: w ? "Saving changes" : X ? "Live collaboration" : "Reconnecting",
-                "aria-label": w ? "Saving changes" : X ? "Live collaboration" : "Reconnecting",
-                children: [
-                  c.jsx("span", {
-                    className: `connection-dot ${X ? "connected" : ""}`,
-                  }),
-                  c.jsxs("span", {
-                    children: [
-                      w
-                        ? "Saving changes…"
-                        : X
-                          ? "Live collaboration"
-                          : "Reconnecting…",
-                      c.jsx("small", {
-                        children: z.syncedAt
-                          ? `Guest data received ${new Date(z.syncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-                          : z.importedAt
-                            ? "Guest list: manual CSV snapshot"
-                            : "Upload a CSV to get started",
-                      }),
-                    ],
-                  }),
-                  X && !w && c.jsx(Wy, { size: 16 }),
                 ],
               }),
             ],
