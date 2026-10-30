@@ -14966,19 +14966,17 @@ function og({
         ((st.current = !0), m());
     }, [R]));
   function y(d, C, k) {
-    const G = document
-      .elementFromPoint(d, C)
-      ?.closest(".chair[data-seat-index]");
-    if (!G || !ct.current?.node.ownerSVGElement?.contains(G)) return null;
-    const q = G.dataset.tableId,
-      L = Number(G.dataset.seatIndex);
-    return {
-      tableId: q,
-      index: L,
-      blocked: R.some(
-        (r) => r.tableId === q && r.seatIndex === L && r.id !== k,
-      ),
-    };
+    const hit=document.elementFromPoint(d,C);
+    const chair=hit?.closest('.chair[data-seat-index]');
+    if(chair&&vt.current?.contains(chair)) {
+      const tableId=chair.dataset.tableId,index=Number(chair.dataset.seatIndex);
+      return {tableId,index,swap:R.some(guest=>guest.tableId===tableId&&guest.seatIndex===index&&guest.id!==k),blocked:false};
+    }
+    const target=hit?.closest('.table-target[data-table-id]');
+    if(!target||!vt.current?.contains(target))return null;
+    const table=S.find(item=>item.id===target.dataset.tableId);
+    if(!table)return null;
+    return {tableId:table.id,index:undefined,blocked:R.filter(guest=>guest.tableId===table.id&&guest.id!==k).length>=table.capacity};
   }
   function x(d, C) {
     if (d.button !== 0 || !d.isPrimary) return;
@@ -15006,21 +15004,16 @@ function og({
       }, 350)));
   }
   function A(d) {
-    const C = ct.current;
-    if (!(!C || C.pointerId !== d.pointerId)) {
-      if (!C.active) {
-        Math.hypot(d.clientX - C.x, d.clientY - C.y) > 8 &&
-          ((st.current = !0), m());
-        return;
-      }
-      (d.preventDefault(),
-        dt({
-          guestId: C.guestId,
-          x: d.clientX,
-          y: d.clientY,
-          target: y(d.clientX, d.clientY, C.guestId),
-        }));
+    const active=ct.current;
+    if(!active||active.pointerId!==d.pointerId)return;
+    if(!active.active) {
+      if(Math.hypot(d.clientX-active.x,d.clientY-active.y)<5)return;
+      active.active=true;
+      if(active.timer){clearTimeout(active.timer);active.timer=null;}
+      N(null);
     }
+    d.preventDefault();
+    dt({guestId:active.guestId,x:d.clientX,y:d.clientY,target:y(d.clientX,d.clientY,active.guestId)});
   }
   function H(d) {
     const C = ct.current;
@@ -15220,7 +15213,8 @@ function og({
               {
                 transform: `translate(${Ht?.id === d.id ? Ht.x : d.x} ${Ht?.id === d.id ? Ht.y : d.y})`,
                 onPointerDown: (q) => te(q, d),
-                className: `table-target ${V === d.id ? "drag-over" : ""} ${z && !G ? "table-available" : ""}`,
+                className: `table-target ${V === d.id || w?.target?.tableId === d.id ? "drag-over" : ""} ${w?.target?.tableId === d.id && w.target.blocked ? "table-drop-full" : ""} ${z && !G ? "table-available" : ""}`,
+                "data-table-id": d.id,
                 tabIndex: 0,
                 role: "button",
                 "aria-label": `${Qe(d)}, ${C.length} of ${d.capacity} seated${z ? ", select to seat selected guest" : ""}`,
@@ -15383,10 +15377,10 @@ function og({
               c.jsx("strong", { children: nt.name }),
               c.jsx("span", {
                 children: w.target?.blocked
-                  ? "Drop to swap seats"
+                  ? "This table is full. Choose another table or an open chair."
                   : O
-                    ? `${Qe(O)} · Chair ${w.target.index + 1}`
-                    : "Drop on an open chair",
+                    ? w.target.swap ? `${Qe(O)} · Drop to swap seats` : w.target.index === undefined ? `${Qe(O)} · Next open chair` : `${Qe(O)} · Chair ${w.target.index + 1}`
+                    : "Drop on a table or an open chair",
               }),
             ],
           }),
@@ -18248,7 +18242,7 @@ function Eg() {
                             className: "board-hint",
                             children: [
                               c.jsx(Bm, { size: 13 }),
-                              "Drag table centers to move · Click chairs for details",
+                              "Drag guests from their chairs to any table · Drag table centers to move",
                             ],
                           }),
                           c.jsxs("button", {
@@ -19034,7 +19028,7 @@ function Eg() {
                         c.jsx("h3", { children: "Seat guests" }),
                         c.jsx("p", {
                           children:
-                            "Drag guests to tables. On a phone or with a keyboard, select a guest and then select a table. Click a seated guest for their details, or hold their chair and drag to an open chair. Click any table for an enlarged seating view and to change its name or capacity.",
+                            "Drag guests to tables. On a phone or with a keyboard, select a guest and then select a table. Click a seated guest for their details, or drag their chair to any table or another chair. Click any table for an enlarged seating view and to change its name or capacity.",
                         }),
                       ],
                     }),
