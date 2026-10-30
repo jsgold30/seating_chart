@@ -14846,6 +14846,7 @@ function og({
   onMoveTable: rt,
   zoom: mt,
   floorPlan,
+  sizing = "width",
 }) {
   const [V, gt] = J.useState(null),
     [X, N] = J.useState(null),
@@ -14855,6 +14856,31 @@ function og({
     vt = J.useRef(null),
     Ut = J.useRef(null),
     [Ht, zt] = J.useState(null);
+  const [viewport, setViewport] = J.useState({width:0,height:0});
+  const panTimer = J.useRef(null);
+  J.useLayoutEffect(() => {
+    const container = vt.current?.closest(".board-scroll");
+    if(!container)return;
+    const measure = () => setViewport(previous => {
+      const width=container.clientWidth, height=container.clientHeight;
+      return previous.width===width&&previous.height===height ? previous : {width,height};
+    });
+    const observer=new ResizeObserver(measure);observer.observe(container);measure();
+    return () => observer.disconnect();
+  }, []);
+  function startSeatPan() {
+    if(panTimer.current)return;
+    panTimer.current=setInterval(() => {
+      const active=ct.current,container=vt.current?.closest(".board-scroll");
+      if(!active?.active||!container)return;
+      const bounds=container.getBoundingClientRect(),px=active.currentX??active.x,py=active.currentY??active.y;
+      if(px<bounds.left||px>bounds.right)return;
+      const speed=(value,min,max)=>value<min+40?-Math.min(18,Math.ceil((min+40-value)/3)):value>max-40?Math.min(18,Math.ceil((value-max+40)/3)):0;
+      const beforeX=container.scrollLeft,beforeY=container.scrollTop;
+      container.scrollLeft+=speed(px,bounds.left,bounds.right);container.scrollTop+=speed(py,bounds.top,bounds.bottom);
+      if(container.scrollLeft!==beforeX||container.scrollTop!==beforeY)dt({guestId:active.guestId,x:px,y:py,target:y(px,py,active.guestId)});
+    },32);
+  }
   function qt() {
     const d = Ut.current;
     ((Ut.current = null),
@@ -14911,6 +14937,7 @@ function og({
       C.active ? rt(C.table.id, C.x, C.y) : k && o(C.table));
   }
   function m() {
+    if(panTimer.current){clearInterval(panTimer.current);panTimer.current=null;}
     const d = ct.current;
     ((ct.current = null),
       d?.timer && clearTimeout(d.timer),
@@ -15000,6 +15027,7 @@ function og({
           ((k.active = !0),
           (k.timer = null),
           N(null),
+          startSeatPan(),
           dt({ guestId: C.id, x: k.x, y: k.y, target: y(k.x, k.y, C.id) }));
       }, 350)));
   }
@@ -15013,6 +15041,7 @@ function og({
       N(null);
     }
     d.preventDefault();
+    active.currentX=d.clientX;active.currentY=d.clientY;startSeatPan();
     dt({guestId:active.guestId,x:d.clientX,y:d.clientY,target:y(d.clientX,d.clientY,active.guestId)});
   }
   function H(d) {
@@ -15118,9 +15147,10 @@ function og({
       })],
     }, C);
   }
+  const canvasWidth=sizing==="fit" ? Math.min(viewport.width-2,(viewport.height-8)*800/705+8) : viewport.width-2;
   return c.jsxs("div", {
     className: `plan-canvas${w ? " seat-drag-active" : ""}`,
-    style: { width: `${mt * 100}%`, minWidth: 560, "--zoom": mt },
+    style: { width: viewport.width ? `${Math.max(1,Math.floor(canvasWidth*mt))}px` : "100%", minWidth: 0, "--zoom": mt },
     children: [
       c.jsxs("svg", {
         ref: vt,
@@ -17332,6 +17362,7 @@ const { GuestTablePicker, VenueLayer, FloorPlanEditor } = createFeatures(J, Al);
 
 function Eg() {
   const [pickerOpen, setPickerOpen] = J.useState(false);
+  const [planSizing, setPlanSizing] = J.useState("width");
   const [S, R] = J.useState(null),
     [z, o] = J.useState(null),
     [Q, Z] = J.useState(""),
@@ -17964,7 +17995,7 @@ function Eg() {
                   c.jsxs("div", {
                     children: [
                       c.jsx("strong", { children: z.guests.length }),
-                      c.jsx("span", { children: "Attending guests" }),
+                      c.jsx("span", { children: "Guests" }),
                     ],
                   }),
                 ],
@@ -18001,7 +18032,7 @@ function Eg() {
                           c.jsx("span", { className: "tiny-dot" }),
                         ],
                       }),
-                      c.jsx("span", { children: "Still need a seat" }),
+                      c.jsx("span", { children: "To seat" }),
                     ],
                   }),
                 ],
@@ -18022,13 +18053,15 @@ function Eg() {
                           c.jsxs("small", { children: [" / ", kl, " seats"] }),
                         ],
                       }),
-                      c.jsx("span", { children: "Tables to gather around" }),
+                      c.jsx("span", { children: "Tables" }),
                     ],
                   }),
                 ],
               }),
               c.jsxs("div", {
                 className: "save-status",
+                title: w ? "Saving changes" : X ? "Live collaboration" : "Reconnecting",
+                "aria-label": w ? "Saving changes" : X ? "Live collaboration" : "Reconnecting",
                 children: [
                   c.jsx("span", {
                     className: `connection-dot ${X ? "connected" : ""}`,
@@ -18146,6 +18179,13 @@ function Eg() {
                                   }),
                                 ],
                               }),
+                              c.jsx("button", {
+                                className: "button secondary fit-plan-button",
+                                "aria-label": planSizing === "fit" ? "Fill available width" : "Fit entire floor plan",
+                                title: planSizing === "fit" ? "Fill available width" : "Fit entire floor plan",
+                                onClick: () => { setPlanSizing(planSizing === "fit" ? "width" : "fit"); A(1); },
+                                children: planSizing === "fit" ? "Fill" : "Fit",
+                              }),
                               c.jsxs("div", {
                                 className: "view-switch",
                                 "aria-label": "Floor plan view",
@@ -18194,6 +18234,7 @@ function Eg() {
                                 },
                                 zoom: x,
                               floorPlan: z.floorPlan,
+                              sizing: planSizing,
                               })
                             : c.jsx("div", {
                                 className: "table-grid",
