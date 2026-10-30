@@ -21,3 +21,10 @@
 @media print{.venue-layer image{opacity:.65}.customize-floor-button{display:none}}
 .table-target.table-drop-full .table-surface{stroke:#ad654c;stroke-width:3}.seat-drag-active .table-target{cursor:grabbing}.chair-tooltip{pointer-events:none}
 .chair-initials{fill:#344a32;font-family:var(--sans,Arial,sans-serif);font-weight:600;letter-spacing:-.15px;pointer-events:none;user-select:none;-webkit-user-select:none}.chair-initials-dragging{opacity:.45}
+/* Compact floor-plan toolbar: action at left, zoom and view controls at right. */
+.board-toolbar{min-height:0;padding:6px 14px;gap:0;flex-wrap:nowrap}.board-toolbar .board-tools{width:100%;gap:12px;flex-wrap:nowrap!important;justify-content:flex-start}.board-tools .customize-floor-button{flex:0 0 auto;min-height:32px;padding:6px 12px}.board-tools .zoom-controls{margin-left:auto}.customize-label-short{display:none}
+@media(max-width:650px){.board-toolbar{padding:4px 8px}.board-toolbar .board-tools{gap:6px}.board-tools .customize-floor-button{padding:6px 10px}.customize-label-full{display:none}.customize-label-short{display:inline}}
+@media(pointer:coarse){.board-tools .customize-floor-button{min-height:44px}}
+@media(max-width:650px){.site-header>.brand{font-size:24px}}
+@media(max-width:380px){.site-header .profile-avatar{display:none}.site-header{gap:0 8px}.main-nav{gap:12px}}
+@media(max-width:360px){.board-tools .zoom-controls>span{display:none}}

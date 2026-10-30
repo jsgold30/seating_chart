@@ -1,4 +1,4 @@
-# Seated
+# Placecard
 
 Recovered from the published Railway application on 2026-10-30. The server modules
 are recovered source. `src/recovered-app.js` is the formatted published client

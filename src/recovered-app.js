@@ -17576,7 +17576,7 @@ function Eg() {
           className: "brand",
           children: [
             c.jsx(dc, {}),
-            "Seated",
+            "Placecard",
             c.jsx("span", { className: "brand-dot", children: "." }),
           ],
         }),
@@ -17612,7 +17612,7 @@ function Eg() {
           className: "brand",
           children: [
             c.jsx(dc, {}),
-            "Seated",
+            "Placecard",
             c.jsx("span", { className: "brand-dot", children: "." }),
           ],
         }),
@@ -17832,10 +17832,10 @@ function Eg() {
             onClick: (g) => {
               (g.preventDefault(), Ut("plan"));
             },
-            "aria-label": "Seated home",
+            "aria-label": "Placecard home",
             children: [
               c.jsx(dc, { size: 25, strokeWidth: 1.5 }),
-              "Seated",
+              "Placecard",
               c.jsx("span", { className: "brand-dot", children: "." }),
             ],
           }),
@@ -18090,19 +18090,17 @@ function Eg() {
                       c.jsxs("div", {
                         className: "board-toolbar",
                         children: [
-                          c.jsx("div", {
-                            className: "board-title",
-                            children: c.jsx("h2", {
-                              children: "The reception",
-                            }),
-                          }),
                           c.jsxs("div", {
                             className: "board-tools",
                             children: [
-                              c.jsx("button", {
+                              c.jsxs("button", {
                       className: "button secondary customize-floor-button",
                       onClick: () => { mt(""); st("floor-plan"); },
-                      children: "Customize floor plan",
+                      "aria-label": "Customize floor plan",
+                      children: [
+                        c.jsx("span", { className: "customize-label-full", children: "Customize floor plan" }),
+                        c.jsx("span", { className: "customize-label-short", children: "Customize" }),
+                      ],
                     }),
                               c.jsxs("div", {
                                 className: "zoom-controls",
