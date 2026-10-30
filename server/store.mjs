@@ -3,6 +3,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { planGuestImport } from './import-plan.mjs';
+import { defaultFloorPlan } from '../shared/floor-plan.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const token = () => randomBytes(32).toString('base64url');
@@ -39,6 +40,10 @@ export function openStore(filename) {
       email TEXT NOT NULL DEFAULT '', source TEXT NOT NULL, source_key TEXT,
       attending INTEGER NOT NULL DEFAULT 1, table_id TEXT REFERENCES tables(id),seat_index INTEGER,
       UNIQUE(wedding_id, source, source_key)
+    );
+    CREATE TABLE IF NOT EXISTS floor_plans (
+      wedding_id TEXT PRIMARY KEY REFERENCES weddings(id) ON DELETE CASCADE,
+      revision INTEGER NOT NULL DEFAULT 0, config TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS guests_wedding ON guests(wedding_id);
     CREATE INDEX IF NOT EXISTS tables_wedding ON tables(wedding_id);
@@ -89,7 +94,23 @@ export function openStore(filename) {
     const guests = db.prepare(`SELECT id,name,household,meal,dietary,email,source,table_id AS tableId,seat_index AS seatIndex FROM guests WHERE wedding_id=? AND attending=1 ORDER BY name COLLATE NOCASE,id`).all(id);
     const tables = db.prepare('SELECT id,number,name,capacity,x,y FROM tables WHERE wedding_id=? ORDER BY number').all(id);
     return { id, name: w.name, date: w.date, revision: w.revision, demo: !!w.demo, importedAt: w.imported_at,
-      syncedAt: w.synced_at, syncConfigured: !!w.sync_hash, role, guests, tables };
+      syncedAt: w.synced_at, syncConfigured: !!w.sync_hash, role, guests, tables, floorPlan: floorPlan(id) };
+  }
+  function floorPlan(id) {
+    const row=db.prepare('SELECT revision,config FROM floor_plans WHERE wedding_id=?').get(id);
+    return row ? {...JSON.parse(row.config),revision:row.revision} : defaultFloorPlan();
+  }
+  function updateFloorPlan(id, data) {
+    transaction(()=>{
+      wedding(id);
+      const previous=floorPlan(id);
+      if(data.expectedRevision!==previous.revision)throw new AppError(409,'The floor plan changed on another device. Close and reopen Customize floor plan to load the latest version.');
+      const next={elements:data.elements ?? previous.elements,image:data.image===undefined ? previous.image : data.image};
+      db.prepare(`INSERT INTO floor_plans(wedding_id,revision,config) VALUES(?,?,?)
+        ON CONFLICT(wedding_id) DO UPDATE SET revision=excluded.revision,config=excluded.config`)
+        .run(id,previous.revision+1,JSON.stringify(next));
+      bump(id);
+    });
   }
   function create(name, date = '', demo = false) {
     const id = randomUUID(); const ownerKey = token(); const editorKey = token();
@@ -246,5 +267,5 @@ export function openStore(filename) {
       db.prepare('UPDATE weddings SET demo=0 WHERE id=?').run(id); bump(id);
     });
   }
-  return { db, authorize,state,create,assign,addGuest,deleteGuest,addTable,moveTable,updateTable,updateWedding,previewImport,importGuests,rotateEditor,rotateSync,clearDemo };
+  return { db, floorPlan,updateFloorPlan,authorize,state,create,assign,addGuest,deleteGuest,addTable,moveTable,updateTable,updateWedding,previewImport,importGuests,rotateEditor,rotateSync,clearDemo };
 }

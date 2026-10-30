@@ -15,6 +15,31 @@ const importSchema = z.object({
   expectedRevision:z.number().int().nonnegative().optional(),
 }).refine(data => new Set(data.guests.map(g=>g.sourceKey)).size===data.guests.length, 'Guest identifiers must be unique.');
 
+const elementSchema=z.object({
+  id:z.string().min(1).max(80),kind:z.enum(['stage','dance','circle','bar','lounge','rectangle']),
+  label:name,x:z.number().finite().min(20).max(760),y:z.number().finite().min(36).max(650),
+  width:z.number().finite().min(20).max(760),height:z.number().finite().min(20).max(634),
+}).refine(e=>e.x+e.width<=780&&e.y+e.height<=670,'Keep venue elements inside the room.');
+const imageSchema=z.object({
+  dataUrl:z.string().max(5600000),name:z.string().max(180),
+  x:z.number().finite().min(20).max(760),y:z.number().finite().min(36).max(650),
+  width:z.number().finite().min(20).max(760),height:z.number().finite().min(20).max(634),
+  opacity:z.number().min(0.1).max(1),
+}).refine(e=>e.x+e.width<=780&&e.y+e.height<=670,'Keep the floor-plan image inside the room.')
+.refine(image=>{
+  const match=image.dataUrl.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/);
+  if(!match)return false;
+  const bytes=Buffer.from(match[2],'base64');
+  if(bytes.length>4*1024*1024||bytes.length<12)return false;
+  if(match[1]==='png')return bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+  if(match[1]==='jpeg')return bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
+  return bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';
+},'Upload a valid PNG, JPEG, or WebP image up to 4 MB.');
+const floorPlanSchema=z.object({
+  expectedRevision:z.number().int().nonnegative(),
+  elements:z.array(elementSchema).max(60).optional(),image:imageSchema.nullable().optional(),
+}).refine(d=>!d.elements||new Set(d.elements.map(e=>e.id)).size===d.elements.length,'Venue element identifiers must be unique.');
+
 export function createApp(store, { production = false, preview = false } = {}) {
   const app = express(); const events = new EventEmitter(); events.setMaxListeners(1000);
   const streams = new Map(); const creationLimits = new Map();
@@ -24,7 +49,7 @@ export function createApp(store, { production = false, preview = false } = {}) {
       imgSrc:["'self'",'data:','blob:'], connectSrc:["'self'"], fontSrc:["'self'"], upgradeInsecureRequests:null,
       ...(preview ? { frameAncestors:null } : {}) },
   } : false, xFrameOptions:!preview, strictTransportSecurity:production&&!preview, referrerPolicy:{policy:'no-referrer'} }));
-  app.use(express.json({ limit:'3mb' }));
+  app.use(express.json({ limit:'7mb' }));
   app.use('/api', (_req,res,next) => { res.set('Cache-Control','no-store'); next(); });
   app.get('/api/health', (_req,res) => res.json({ ok:true }));
   app.post('/api/weddings',(req,res) => {
@@ -58,6 +83,9 @@ export function createApp(store, { production = false, preview = false } = {}) {
     const heartbeat=setInterval(()=>res.write(': heartbeat\n\n'),20000); heartbeat.unref();
     req.on('close',()=>{ clearInterval(heartbeat); events.off(id,send); active.delete(res); if(!active.size)streams.delete(id); });
   });
+  app.patch(`${base}/floor-plan`,(req,res)=>{
+    store.updateFloorPlan(req.params.id,floorPlanSchema.parse(req.body));respond(req,res);
+  });
   app.post(`${base}/assign`,(req,res) => {
     const data=z.object({guestId:z.string().uuid(),tableId:z.string().uuid().nullable(),seatIndex:z.number().int().min(0).max(59).optional(),swap:z.boolean().default(false)}).parse(req.body);
     store.assign(req.params.id,data.guestId,data.tableId,data.seatIndex,data.swap); respond(req,res);
@@ -88,7 +116,7 @@ export function createApp(store, { production = false, preview = false } = {}) {
   app.use('/api',(_req,_res,next)=>next(new AppError(404,'This API route does not exist.')));
   app.use((error,_req,res,_next) => {
     if(error instanceof ZodError) return res.status(400).json({error:error.issues[0]?.message || 'Invalid input.'});
-    if(error.type==='entity.too.large') return res.status(413).json({error:'This file is too large. Import up to 5,000 guests.'});
+    if(error.type==='entity.too.large') return res.status(413).json({error:'This upload is too large. Use a smaller image or import up to 5,000 guests.'});
     if(error instanceof SyntaxError && 'body' in error) return res.status(400).json({error:'Invalid JSON request.'});
     if(!error.status) console.error('Request failed:',error.message);
     res.status(error.status||500).json({error:error.status ? error.message : 'Something went wrong. Please try again.'});

@@ -1,3 +1,4 @@
+import { createFeatures } from './features.jsx';
 (function () {
   const R = document.createElement("link").relList;
   if (R && R.supports && R.supports("modulepreload")) return;
@@ -14844,6 +14845,7 @@ function og({
   onGuest: Z,
   onMoveTable: rt,
   zoom: mt,
+  floorPlan,
 }) {
   const [V, gt] = J.useState(null),
     [X, N] = J.useState(null),
@@ -15208,133 +15210,7 @@ function og({
               }),
             ],
           }),
-          c.jsx("rect", {
-            x: "212",
-            y: "38",
-            width: "203",
-            height: "75",
-            rx: "1",
-            fill: "#eceee8",
-            stroke: "#d8dcd2",
-          }),
-          c.jsx("text", {
-            x: "313",
-            y: "80",
-            className: "plan-label",
-            textAnchor: "middle",
-            children: "STAGE",
-          }),
-          c.jsx("rect", {
-            x: "210",
-            y: "113",
-            width: "206",
-            height: "265",
-            fill: "url(#dance-pattern)",
-            stroke: "#e0ddd2",
-          }),
-          c.jsxs("g", {
-            className: "dance-label",
-            textAnchor: "middle",
-            children: [
-              c.jsx("path", {
-                d: "M295 228h36 M302 260h22",
-                stroke: "#c7bd9f",
-              }),
-              c.jsx("text", { x: "313", y: "249", children: "DANCE FLOOR" }),
-            ],
-          }),
-          c.jsxs("g", {
-            className: "plan-label",
-            textAnchor: "middle",
-            children: [
-              c.jsx("circle", {
-                cx: "445",
-                cy: "195",
-                r: "11",
-                fill: "#eeeee8",
-                stroke: "#d7d9ce",
-              }),
-              c.jsx("text", {
-                x: "422",
-                y: "193",
-                textAnchor: "end",
-                fontSize: "7",
-                children: "CHALLAH",
-              }),
-              c.jsx("text", {
-                x: "422",
-                y: "203",
-                textAnchor: "end",
-                fontSize: "7",
-                children: "TABLE",
-              }),
-            ],
-          }),
-          c.jsxs("g", {
-            className: "plan-label",
-            textAnchor: "middle",
-            children: [
-              c.jsx("circle", {
-                cx: "515",
-                cy: "566",
-                r: "11",
-                fill: "#eeeee8",
-                stroke: "#d7d9ce",
-              }),
-              c.jsx("text", {
-                x: "515",
-                y: "591",
-                fontSize: "7",
-                children: "CAKE TABLE",
-              }),
-            ],
-          }),
-          c.jsx("path", {
-            d: "M720 496H756V519H744V623H780V647H720Z",
-            fill: "#e6e8df",
-            stroke: "#ccd0c4",
-          }),
-          c.jsx("text", {
-            x: "730",
-            y: "566",
-            transform: "rotate(90 730 566)",
-            className: "plan-label",
-            textAnchor: "middle",
-            children: "THE BAR",
-          }),
-          [195, 420].map((d) =>
-            c.jsxs(
-              "g",
-              {
-                fill: "#f2f0e9",
-                stroke: "#d5d5c9",
-                children: [
-                  c.jsx("rect", {
-                    x: "744",
-                    y: d,
-                    width: "17",
-                    height: "32",
-                    rx: "2",
-                  }),
-                  c.jsx("rect", {
-                    x: "727",
-                    y: d - 10,
-                    width: "12",
-                    height: "13",
-                    rx: "2",
-                  }),
-                  c.jsx("rect", {
-                    x: "727",
-                    y: d + 30,
-                    width: "12",
-                    height: "13",
-                    rx: "2",
-                  }),
-                ],
-              },
-              d,
-            ),
-          ),
+          c.jsx(VenueLayer, { floorPlan }),
           S.map((d) => {
             const C = R.filter((q) => q.tableId === d.id),
               k = d.number === 18,
@@ -17421,7 +17297,10 @@ function Tg({ onClose: S, onImport: R, busy: z, session: o, revision: Q }) {
     ],
   });
 }
+const { GuestTablePicker, VenueLayer, FloorPlanEditor } = createFeatures(J, Al);
+
 function Eg() {
+  const [pickerOpen, setPickerOpen] = J.useState(false);
   const [S, R] = J.useState(null),
     [z, o] = J.useState(null),
     [Q, Z] = J.useState(""),
@@ -17567,25 +17446,15 @@ function Eg() {
     }
   }
   async function it(g, tt, bt) {
-    const Ce = z?.guests.find((De) => De.id === g);
-    !Ce ||
-      (Ce.tableId === tt && (bt === void 0 || Ce.seatIndex === bt)) ||
-      ((await pt("/assign", {
-        guestId: g,
-        tableId: tt,
-        seatIndex: bt,
-        swap:
-          bt !== void 0 &&
-          z.guests.some(
-            (De) => De.tableId === tt && De.seatIndex === bt && De.id !== g,
-          ),
-      })) &&
-        ($(null),
-        gt(
-          tt
-            ? `${Ce.name} seated at ${Qe(z.tables.find((De) => De.id === tt))}.`
-            : `${Ce.name} moved to the unseated pool.`,
-        )));
+    const guest=z?.guests.find(item=>item.id===g);
+    if(!guest)return false;
+    if(guest.tableId===tt&&(bt===undefined||guest.seatIndex===bt))return true;
+    const success=await pt('/assign',{
+      guestId:g,tableId:tt,seatIndex:bt,
+      swap:bt!==undefined&&z.guests.some(item=>item.tableId===tt&&item.seatIndex===bt&&item.id!==g),
+    });
+    if(success){$(null);setPickerOpen(false);gt(tt?`${guest.name} seated at ${Qe(z.tables.find(item=>item.id===tt))}.`:`${guest.name} moved to the unseated pool.`);}
+    return success;
   }
   async function Nt(g) {
     (dt(!0), mt(""));
@@ -17865,7 +17734,7 @@ function Eg() {
                     selected: Et === g.id,
                     onDelete: () => at(g),
                     onSelect: () => {
-                      ($(Et === g.id ? null : g.id),
+                      ($(g.id), setPickerOpen(true), mt(""),
                         window.innerWidth < 900 && nt(!1));
                     },
                     tableName: g.tableId
@@ -18221,7 +18090,12 @@ function Eg() {
                           c.jsxs("div", {
                             className: "board-tools",
                             children: [
-                              c.jsxs("button", {
+                              c.jsx("button", {
+                      className: "button secondary customize-floor-button",
+                      onClick: () => { mt(""); st("floor-plan"); },
+                      children: "Customize floor plan",
+                    }),
+                    c.jsxs("button", {
                                 className: "text-button",
                                 onClick: () => st("table-add"),
                                 children: [
@@ -18298,6 +18172,7 @@ function Eg() {
                                   );
                                 },
                                 zoom: x,
+                              floorPlan: z.floorPlan,
                               })
                             : c.jsx("div", {
                                 className: "table-grid",
@@ -18676,7 +18551,7 @@ function Eg() {
                   className: "button primary",
                   disabled: w,
                   onClick: () => {
-                    ($(Dt.id), Ut("plan"), ot("map"), Yt());
+                    ($(Dt.id), setPickerOpen(true), mt(""), Ut("plan"), ot("map"), Yt());
                   },
                   children: [
                     c.jsx(mc, { size: 15 }),
@@ -18695,6 +18570,16 @@ function Eg() {
               }),
           ],
         }),
+      pickerOpen && Vt && c.jsx(GuestTablePicker, {
+        key: Vt.id, guest: Vt, tables:z.tables, guests:z.guests,busy:w,error:rt,
+        onClose:()=>{setPickerOpen(false);$(null);},
+        onMap:()=>{setPickerOpen(false);Ut("plan");ot("map");nt(false);},
+        onAssign:it,
+      }),
+      ct === "floor-plan" && c.jsx(FloorPlanEditor, {
+        floorPlan:z.floorPlan, tables:z.tables,guests:z.guests,busy:w,error:rt,onClose:U,
+        onSave:async data=>{const result=await pt("/floor-plan",data,"PATCH");if(result)gt("Floor plan saved.");return result;},
+      }),
       ct === "connect" &&
         c.jsx(Tg, {
           onClose: U,
