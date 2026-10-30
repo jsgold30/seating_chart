@@ -17537,7 +17537,7 @@ function Eg() {
           Oe.name,
           Oe.dietary,
           z.tables.find((Jl) => Jl.id === Oe.tableId)
-            ? Qe(z.tables.find((Jl) => Jl.id === Oe.tableId))
+            ? _a(z.tables.find((Jl) => Jl.id === Oe.tableId))
             : "Unseated",
         ]),
       ],
