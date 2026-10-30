@@ -18095,14 +18095,6 @@ function Eg() {
                       onClick: () => { mt(""); st("floor-plan"); },
                       children: "Customize floor plan",
                     }),
-                    c.jsxs("button", {
-                                className: "text-button",
-                                onClick: () => st("table-add"),
-                                children: [
-                                  c.jsx(ja, { size: 14 }),
-                                  "Add round table",
-                                ],
-                              }),
                               c.jsxs("div", {
                                 className: "zoom-controls",
                                 children: [
