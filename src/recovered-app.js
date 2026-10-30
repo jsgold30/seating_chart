@@ -1,3 +1,4 @@
+import { headTableGeometry } from '../shared/head-table.mjs';
 import { createFeatures, guestInitials } from './features.jsx';
 (function () {
   const R = document.createElement("link").relList;
@@ -15142,7 +15143,7 @@ function og({
         x: centerX * Math.cos(angle) - centerY * Math.sin(angle),
         y: centerX * Math.sin(angle) + centerY * Math.cos(angle),
         textAnchor: "middle", dominantBaseline: "central",
-        style: { fontSize: d.number === 18 ? 6.2 : 5.5 },
+        style: { fontSize: d.number === 18 ? Math.min(6.2, Number(k.width) * .58) : 5.5 },
         children: guestInitials(G.name),
       })],
     }, C);
@@ -15282,34 +15283,21 @@ function og({
                             x: "-172",
                             y: "-48",
                             width: "344",
-                            height: "96",
+                            height: "122",
                             rx: "18",
                             fill: "transparent",
                           }),
-                          Array.from({ length: d.capacity }, (q, L) => {
-                            const r = Math.ceil(d.capacity / 2),
-                              j = L < r,
-                              Y = j ? L : L - r,
-                              I = j ? r : d.capacity - r,
-                              W = I === 1 ? 0 : -145 + 290 * (Y / (I - 1));
-                            return B(d, L, {
-                              x: W - 7,
-                              y: j ? -30 : 18,
-                              width: 14,
-                              height: 15,
-                            });
-                          }),
-                          c.jsx("rect", {
-                            x: "-160",
-                            y: "-18",
-                            width: "320",
-                            height: "36",
-                            rx: "5",
-                            className: `table-surface ${G ? "full" : ""}`,
-                          }),
+                          headTableGeometry(d.capacity).chairs.map(chair => B(d, chair.index, {
+                            x:chair.x,y:chair.y,width:chair.width,height:chair.height,
+                          })),
+                          headTableGeometry(d.capacity).sections.map(section => c.jsx("rect", {
+                            x:section.x,y:-18,width:section.width,height:36,rx:1,
+                            "data-head-section":section.index,
+                            className:`head-section-surface ${section.index===2?"table-surface":""} ${G?"full":""}`,
+                          },section.index)),
                           c.jsxs("text", {
                             textAnchor: "middle",
-                            y: el(d) ? -3 : 4,
+                            y: 49,
                             className: "head-name",
                             children: [
                               "HEAD TABLE ",
@@ -15322,7 +15310,7 @@ function og({
                           el(d) &&
                             c.jsx("text", {
                               textAnchor: "middle",
-                              y: "10",
+                              y: "61",
                               className: "head-count",
                               children: el(d).slice(0, 40),
                             }),
@@ -15520,21 +15508,23 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
       () => x.removeEventListener("change", A)
     );
   }, []);
-  const compactHead = Q && (mt - 24) / Z < 44;
+  const headGeometry = headTableGeometry(S.capacity);
+  const compactHead = Q && (mt - 24) / Math.max(headGeometry.topCount,S.capacity-headGeometry.topCount) < 44;
   const compactFont = Math.max(4, Math.min(10, ((mt - 16 - (Z - 1) * 2) / Z - 4) / 1.75));
   const $ = Z,
     y = Array.from({ length: S.capacity }, (x, A) => {
       const H = R.find((nt) => nt.tableId === S.id && nt.seatIndex === A),
         ot = (A / S.capacity) * Math.PI * 2 - Math.PI / 2,
         Ct = Q
-          ? {
-              gridColumn: ((A % Z) % $) + 1,
-              gridRow: A < Z ? 1 : 3,
-            }
+          ? undefined
           : {
               left: `${50 + 36 * Math.cos(ot)}%`,
               top: `${50 + 39 * Math.sin(ot)}%`,
             };
+      const geometryChair = Q ? headGeometry.chairs[A] : null;
+      const rowCount = geometryChair ? headGeometry.chairs.filter(chair => chair.section===geometryChair.section&&chair.side===geometryChair.side).length : 1;
+      const sectionWidth = geometryChair ? headGeometry.sections[geometryChair.section].width : 1;
+      const seatFont = compactHead ? Math.max(3,Math.min(10,(((mt-24)*sectionWidth/312-(rowCount-1))/rowCount-4)/1.7)) : compactFont;
       return c.jsxs(
         "button",
         {
@@ -15579,11 +15569,12 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
           children: [
             c.jsxs("span", {
               className: "detail-chair-number",
+              style: compactHead ? {fontSize:Math.min(7,seatFont*1.2)} : undefined,
               children: [compactHead ? "" : "Chair ", A + 1],
             }),
             c.jsx("strong", {
               title: H?.name || "Open seat",
-              style: compactHead ? {fontSize: compactFont} : undefined,
+              style: compactHead ? {fontSize: seatFont} : undefined,
               children: H ? compactHead ? guestInitials(H.name) : H.name : compactHead ? "—" : "Open seat",
             }),
           ],
@@ -15621,30 +15612,18 @@ function dg({ table: S, guests: R, onGuest: z, onAssign: o }) {
         children: c.jsxs("div", {
           className: `table-seating-diagram ${Q ? `head-seating${compactHead ? " head-seating-compact" : ""}` : "round-seating"}`,
           style: Q ? { "--seat-columns": $ } : void 0,
-          children: [
-            Array.from({ length: 1 }, (x, A) =>
-              c.jsxs(
-                "div",
-                {
-                  className: "detail-table",
-                  style: Q ? { gridRow: A * 3 + 2 } : void 0,
-                  children: [
-                    c.jsx("strong", { children: _a(S) }),
-                    el(S) && c.jsx("span", { children: el(S) }),
-                    c.jsxs("small", {
-                      children: [
-                        "",
-                        R.filter((H) => H.tableId === S.id).length,
-                        " / ",
-                        S.capacity,
-                        " seated",
-                      ],
-                    }),
-                  ],
-                },
-                A,
-              ),
-            ),
+          children: Q ? headGeometry.sections.map(section => c.jsxs("div", {
+            className:"head-detail-section",style:{flex:section.width},"data-head-section":section.index,
+            children:[
+              c.jsx("div",{className:"head-detail-row",style:{"--row-seats":Math.max(1,headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='top').length)},children:headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='top').map(chair=>y[chair.index])}),
+              c.jsx("div",{className:"detail-table head-detail-surface",children:section.index===2?c.jsx("span",{children:el(S)||"Head table"}):null}),
+              c.jsx("div",{className:"head-detail-row",style:{"--row-seats":Math.max(1,headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='bottom').length)},children:headGeometry.chairs.filter(chair=>chair.section===section.index&&chair.side==='bottom').map(chair=>y[chair.index])}),
+            ],
+          },section.index)) : [
+            c.jsxs("div",{className:"detail-table",children:[
+              c.jsx("strong",{children:_a(S)}),el(S)&&c.jsx("span",{children:el(S)}),
+              c.jsx("small",{children:`${R.filter(guest=>guest.tableId===S.id).length} / ${S.capacity} seated`}),
+            ]}),
             y,
           ],
         }),

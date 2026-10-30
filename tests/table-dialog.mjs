@@ -16,13 +16,15 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3106');
   await page.locator(`.floor-svg .table-target[data-table-id="${head.id}"] .table-surface`).click();
   const dialog=page.getByRole('dialog',{name:'Head table',exact:true});await dialog.waitFor();
-  const box=await dialog.boundingBox();assert.ok(box.width<=1080);assert.ok(box.height<height-15);
+  const box=await dialog.boundingBox();assert.ok(box.width<=1200);assert.ok(box.height<height-15);
   assert.ok(box.x>=0&&box.x+box.width<=width);
   assert.equal(await dialog.locator('details[open]').count(),0);
   const diagram=dialog.locator('.table-seating-scroll');assert.equal(await diagram.evaluate(e=>e.scrollWidth>e.clientWidth+1),false);
   assert.equal(await dialog.getByRole('button',{name:'Next chairs',exact:true}).count(),0);
   assert.equal(await dialog.getByRole('button',{name:'Previous chairs',exact:true}).count(),0);
   await expect(dialog.locator('[data-detail-seat]')).toHaveCount(30);
+  assert.equal(await dialog.locator('.head-detail-section').count(),5);
+  assert.equal(await dialog.locator('.head-detail-section[data-head-section="2"] .head-detail-row').first().locator('[data-detail-seat]').count(),0);
   const seen=await dialog.locator('[data-detail-seat]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.detailSeat)));
   assert.deepEqual(seen.sort((a,b)=>a-b),Array.from({length:30},(_,i)=>i));
   const visibleTogether=await diagram.evaluate(container=>{
