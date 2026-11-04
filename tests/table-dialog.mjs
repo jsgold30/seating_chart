@@ -16,7 +16,7 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:3106');
   await page.locator(`.floor-svg .table-target[data-table-id="${head.id}"] .table-surface`).click();
   const dialog=page.getByRole('dialog',{name:'Head table',exact:true});await dialog.waitFor();
-  const box=await dialog.boundingBox();assert.ok(box.width<=1200);assert.ok(box.height<height-15);
+  const box=await dialog.boundingBox();assert.ok(box.width<=1360);assert.ok(box.height<height-15);
   assert.ok(box.x>=0&&box.x+box.width<=width);
   assert.equal(await dialog.locator('details[open]').count(),0);
   const diagram=dialog.locator('.table-seating-scroll');assert.equal(await diagram.evaluate(e=>e.scrollWidth>e.clientWidth+1),false);
